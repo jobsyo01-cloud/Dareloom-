@@ -1,6 +1,6 @@
 const SHEET_ID = "1A2I6jODnR99Hwy9ZJXPkGDtAFKfpYwrm3taCWZWoZ7o";
 const API_KEY = "AIzaSyBFnyqCW37BUL3qrpGva0hitYUhxE_x5nw";
-const SHEET_NAME = "All";
+const SHEET_NAME = "2";
 const PAGE_SIZE = 12;
 
 function qs(sel){return document.querySelector(sel)}
