@@ -54,6 +54,8 @@ async function renderCategory(cat,page=1){
   const app=qs('#app');
   app.innerHTML=`<div class="container"><div class="header-title"><h2>${cat}</h2></div><div id="list" class="grid"></div><div id="pagination" class="pagination"></div></div>`;
   let data=await fetchAllRows();
+  // Note: This filter looks for an EXACT match (case-insensitive)
+  // Ensure your Google Sheet's Category column matches the nav links (e.g., 'Movie')
   let filtered=data.filter(d=>d.Category?.toLowerCase()===cat.toLowerCase());
   filtered=sortNewest(filtered);
   const {pageItems,pages}=paginate(filtered,page,PAGE_SIZE);
@@ -61,7 +63,7 @@ async function renderCategory(cat,page=1){
   // pagination
   const p=qs('#pagination');
   let html='';
-  for(let i=1;i<=pages;i++) html+=`<a href="javascript:void(0)" class="page-btn ${i===page?'active':''}" onclick="renderCategory('${cat}',${i})">${i}</a>`;
+  for(let i=1;i<=pages;i++) html+=`<a href="javascript:void(0)" class="page-btn ${i===page?'active':''}" onclick="navigateTo('#/category/${cat}/page/${i}')">${i}</a>`;
   p.innerHTML=html;
 }
 
@@ -86,11 +88,18 @@ async function renderItemDetail(id){
 
 function navigateTo(hash){window.location.hash=hash}
 function getRoute(){return location.hash.replace(/^#\/?/,'').split('/')}
+
+// UPDATED router function to manage the 'detail-page' class on the body
 async function router(){
   const parts=getRoute();
+  const isDetailPage = parts[0]==='item';
+  
+  // Toggle the class on the body element to show/hide header and buttons
+  document.body.classList.toggle('detail-page', isDetailPage);
+
   if(parts.length===1&&(parts[0]===''||parts[0]===undefined)){await renderHome();return;}
   if(parts[0]==='category'){const cat=decodeURIComponent(parts[1]||'all');let page=1;if(parts[2]==='page')page=Number(parts[3]||1);await renderCategory(cat,page);return;}
-  if(parts[0]==='item'){const id=decodeURIComponent(parts[1]||'');await renderItemDetail(id);return;}
+  if(isDetailPage){const id=decodeURIComponent(parts[1]||'');await renderItemDetail(id);return;}
   await renderHome();
 }
 
