@@ -1,12 +1,16 @@
 const SHEET_ID = "1A2I6jODnR99Hwy9ZJXPkGDtAFKfpYwrm3taCWZWoZ7o";
 const API_KEY = "AIzaSyBFnyqCW37BUL3qrpGva0hitYUhxE_x5nw";
-const SHEET_NAME = "2"; // Confirmed Sheet Name
-const PAGE_SIZE = 12;
+const SHEET_NAME = "2";
+const PAGE_SIZE = 6; // UPDATED: 6 items per page
 
 function qs(sel){return document.querySelector(sel)}
 
+// Define the categories that are explicitly in the header (used to filter out sub-categories)
+const HEADER_CATEGORIES = [
+    'Movie', 'TV Show', 'K-Drama', 'Anime', 'Erotic Movie'
+];
+
 async function fetchAllRows(){
-  // Fetching data from the Sheet Name "2"
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}?key=${API_KEY}`;
   const res = await fetch(url);
   const json = await res.json();
@@ -20,13 +24,13 @@ async function fetchAllRows(){
   });
   data.forEach((d,i)=>{
     d._id=d.id||d.Title||(i+1).toString();
-    // Use Date to sort (important for "Latest Movie")
     d._ts=new Date(d.date||"1970-01-01").getTime(); 
   });
   return data;
 }
 
 function sortNewest(arr){return arr.sort((a,b)=>(b._ts||0)-(a._ts||0))}
+
 function paginate(items,page=1,pageSize=PAGE_SIZE){
   const total=items.length,pages=Math.max(1,Math.ceil(total/pageSize)),start=(page-1)*pageSize;
   return {pageItems:items.slice(start,start+pageSize),total,pages};
@@ -46,18 +50,78 @@ function movieCardHtml(item){
   </div>`;
 }
 
-async function renderHome(){
-  const app=qs('#app');
-  app.innerHTML=`<div class="container"><div id="list" class="grid"></div><div id="pagination" class="pagination"></div></div>`;
-  let data=await fetchAllRows();
-  data=sortNewest(data); // Home page always shows newest first
-  const {pageItems}=paginate(data,1,PAGE_SIZE);
-  qs('#list').innerHTML=pageItems.map(movieCardHtml).join('');
+// NEW FUNCTION: Helper to generate pagination HTML
+function renderPagination(totalItems, currentPage, cat) {
+    const pages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+    if (pages <= 1) return '';
+    let html = '';
+    // Use the actual navigation function inside onclick
+    for(let i = 1; i <= pages; i++) {
+        const hash = cat === 'all' ? `#/page/${i}` : `#/category/${cat}/page/${i}`;
+        html += `<a href="${hash}" class="page-btn ${i === currentPage ? 'active' : ''}" onclick="navigateTo('${hash}')">${i}</a>`;
+    }
+    return html;
 }
+
+
+// NEW FUNCTION: Renders a section for a sub-category on the home page
+function subCategorySectionHtml(catName, items) {
+    if (!items || items.length === 0) return '';
+    const displayItems = items.slice(0, 6); // Display max 6 items
+    return `
+    <div class="category-section">
+        <div class="header-title-style sub-category-header">
+            <h2 class="category-heading">More: ${catName}</h2>
+            <a href="#/category/${encodeURIComponent(catName)}" class="view-all-btn">View All (${items.length}) &rarr;</a>
+        </div>
+        <div class="grid sub-category-grid">
+            ${displayItems.map(movieCardHtml).join('')}
+        </div>
+    </div>`;
+}
+
+// UPDATED renderHome to include pagination and sub-categories
+async function renderHome(page=1){
+    const app=qs('#app');
+    let data=await fetchAllRows();
+    data=sortNewest(data);
+    
+    // 1. Render the main Latest Uploads section with pagination
+    const {pageItems, total}=paginate(data, page, PAGE_SIZE);
+    
+    let homeHtml = `<div class="container">`;
+    
+    // Main Latest Section
+    homeHtml += `
+    <div class="header-title-style">
+        <h2 class="category-heading">Latest Uploads</h2>
+    </div>
+    <div id="list" class="grid">${pageItems.map(movieCardHtml).join('')}</div>
+    <div id="pagination" class="pagination">${renderPagination(total, page, 'all')}</div>`;
+
+    
+    // 2. Separate and Render Dynamic Sub-Categories
+    // Get all unique categories (trimming whitespace for safety)
+    const allCategories = [...new Set(data.map(d => d.Category?.trim() || '').filter(c => c))];
+    
+    // Filter out the main header categories to get dynamic sub-categories
+    const subCategories = allCategories.filter(cat => 
+        !HEADER_CATEGORIES.some(hCat => hCat.toLowerCase() === cat.toLowerCase())
+    ).sort();
+    
+    // Render sections for each sub-category
+    subCategories.forEach(cat => {
+        const catItems = data.filter(d => d.Category?.trim() === cat);
+        homeHtml += subCategorySectionHtml(cat, catItems);
+    });
+    
+    homeHtml += `</div>`;
+    app.innerHTML = homeHtml;
+}
+
 
 async function renderCategory(cat,page=1){
   const app=qs('#app');
-  // Use professional title structure
   app.innerHTML=`
   <div class="container">
     <div class="header-title-style">
@@ -69,70 +133,53 @@ async function renderCategory(cat,page=1){
   
   let data=await fetchAllRows();
   
-  // FIX: Robust category filter - trims spaces from both sides
+  // CRITICAL FIX: Robust category filter
   let filtered=data.filter(d=>d.Category?.trim().toLowerCase()===cat.toLowerCase());
   
   filtered=sortNewest(filtered);
-  const {pageItems,pages}=paginate(filtered,page,PAGE_SIZE);
+  const {pageItems,total}=paginate(filtered,page,PAGE_SIZE);
   qs('#list').innerHTML=pageItems.map(movieCardHtml).join('');
   
-  // pagination
-  const p=qs('#pagination');
-  let html='';
-  for(let i=1;i<=pages;i++) html+=`<a href="javascript:void(0)" class="page-btn ${i===page?'active':''}" onclick="navigateTo('#/category/${cat}/page/${i}')">${i}</a>`;
-  p.innerHTML=html;
+  // Pagination for category page
+  qs('#pagination').innerHTML = renderPagination(total, page, cat);
 }
 
-async function renderItemDetail(id){
-  const app=qs('#app');
-  let data=await fetchAllRows();
-  const item=data.find(d=>(d._id==id));
-  if(!item){app.innerHTML="<p class='not-found'>Item not found</p>";return;}
-
-  const title = item.Title || item.title;
-  const description = item.Description || item.description || 'No description available.';
-  const category = item.Category || item.category || 'N/A';
-  const rating = item.Rating || 'N/A';
-  const runtime = item.Runtime || 'N/A';
-  const date = item.Date || 'N/A';
-  const poster = item.Poster || item.poster;
-
-  app.innerHTML=`
-  <div class="container detail-container">
-    <div class="detail-card">
-      <img src="${poster}" alt="${title}" class="detail-poster">
-      <div class="detail-meta">
-        <h1 class="detail-title">${title}</h1>
-        <div class="detail-info-row">
-            <span class="info-tag category-tag">${category}</span>
-            <span class="info-tag rating-tag">⭐ ${rating}</span>
-            <span class="info-tag runtime-tag">🕒 ${runtime}</span>
-            <span class="info-tag date-tag">📅 ${date}</span>
-        </div>
-        <p class="detail-description">${description}</p>
-        <a class="btn btn-watch" href="${item.Watch||item.watch}" target="_blank">▶️ Watch Now</a>
-      </div>
-    </div>
-  </div>`;
-}
+// ... (renderItemDetail remains the same) ...
 
 function navigateTo(hash){window.location.hash=hash}
 function getRoute(){return location.hash.replace(/^#\/?/,'').split('/')}
 
+// UPDATED router function to handle home page pagination
 async function router(){
   const parts=getRoute();
   const isDetailPage = parts[0]==='item';
+  const isHomePage = parts[0]==='' || parts[0]===undefined || parts[0]==='page';
   
-  // Always set the class on the body for reliable hiding/showing
   document.body.classList.toggle('detail-page', isDetailPage);
 
-  if(parts.length===1&&(parts[0]===''||parts[0]===undefined)){await renderHome();return;}
-  if(parts[0]==='category'){const cat=decodeURIComponent(parts[1]||'all');let page=1;if(parts[2]==='page')page=Number(parts[3]||1);await renderCategory(cat,page);return;}
-  if(isDetailPage){const id=decodeURIComponent(parts[1]||'');await renderItemDetail(id);return;}
-  await renderHome();
+  if(isHomePage){
+    let page=1;
+    if(parts[0]==='page') page=Number(parts[1]||1);
+    await renderHome(page);
+    return;
+  }
+  if(parts[0]==='category'){
+    const cat=decodeURIComponent(parts[1]||'all');
+    let page=1;
+    if(parts[2]==='page')page=Number(parts[3]||1);
+    await renderCategory(cat,page);
+    return;
+  }
+  if(isDetailPage){
+    const id=decodeURIComponent(parts[1]||'');
+    await renderItemDetail(id);
+    return;
+  }
+  await renderHome(1);
 }
 
 qs('#searchInput')?.addEventListener('keyup',(e)=>{if(e.key==='Enter'){const q=e.target.value.trim();window.location.hash=`#/category/all/page/1/q/${encodeURIComponent(q)}`}})
 
 window.addEventListener('hashchange',router)
 window.addEventListener('load',router)
+          
