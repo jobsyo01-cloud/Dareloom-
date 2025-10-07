@@ -1,12 +1,12 @@
 const SHEET_ID = "1A2I6jODnR99Hwy9ZJXPkGDtAFKfpYwrm3taCWZWoZ7o";
 const API_KEY = "AIzaSyBFnyqCW37BUL3qrpGva0hitYUhxE_x5nw";
-const SHEET_NAME = "2"; // UPDATED SHEET NAME
+const SHEET_NAME = "2"; // Confirmed Sheet Name
 const PAGE_SIZE = 12;
 
 function qs(sel){return document.querySelector(sel)}
 
 async function fetchAllRows(){
-  // Using the updated SHEET_NAME
+  // Fetching data from the Sheet Name "2"
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}?key=${API_KEY}`;
   const res = await fetch(url);
   const json = await res.json();
@@ -20,7 +20,8 @@ async function fetchAllRows(){
   });
   data.forEach((d,i)=>{
     d._id=d.id||d.Title||(i+1).toString();
-    d._ts=new Date(d.date||"1970-01-01").getTime();
+    // Use Date to sort (important for "Latest Movie")
+    d._ts=new Date(d.date||"1970-01-01").getTime(); 
   });
   return data;
 }
@@ -32,12 +33,15 @@ function paginate(items,page=1,pageSize=PAGE_SIZE){
 }
 
 function movieCardHtml(item){
+  const genre = item.Genre?.split(',')[0] || item.Category;
+  const rating = item.Rating || 'N/A';
   return `
   <div class="card" onclick="navigateTo('#/item/${encodeURIComponent(item._id)}')">
     <img src="${item.Poster||item.poster||''}" alt="${item.Title||item.title}">
+    <div class="card-meta">${genre}</div>
     <div class="card-body">
       <h3>${item.Title||item.title}</h3>
-      <p>${item.Category||item.category||''}</p>
+      <p>⭐ ${rating}</p>
     </div>
   </div>`;
 }
@@ -46,18 +50,18 @@ async function renderHome(){
   const app=qs('#app');
   app.innerHTML=`<div class="container"><div id="list" class="grid"></div><div id="pagination" class="pagination"></div></div>`;
   let data=await fetchAllRows();
-  data=sortNewest(data);
+  data=sortNewest(data); // Home page always shows newest first
   const {pageItems}=paginate(data,1,PAGE_SIZE);
   qs('#list').innerHTML=pageItems.map(movieCardHtml).join('');
 }
 
 async function renderCategory(cat,page=1){
   const app=qs('#app');
-  // UPDATED: Stylish category title rendering
+  // Use professional title structure
   app.innerHTML=`
   <div class="container">
     <div class="header-title-style">
-      <h2 class="category-heading">${cat}</h2>
+      <h2 class="category-heading">${cat.toUpperCase()}</h2>
     </div>
     <div id="list" class="grid"></div>
     <div id="pagination" class="pagination"></div>
@@ -65,8 +69,8 @@ async function renderCategory(cat,page=1){
   
   let data=await fetchAllRows();
   
-  // CRITICAL: Filter relies on the 'Category' column in Sheet "2" matching 'cat'
-  let filtered=data.filter(d=>d.Category?.toLowerCase()===cat.toLowerCase());
+  // FIX: Robust category filter - trims spaces from both sides
+  let filtered=data.filter(d=>d.Category?.trim().toLowerCase()===cat.toLowerCase());
   
   filtered=sortNewest(filtered);
   const {pageItems,pages}=paginate(filtered,page,PAGE_SIZE);
@@ -83,16 +87,30 @@ async function renderItemDetail(id){
   const app=qs('#app');
   let data=await fetchAllRows();
   const item=data.find(d=>(d._id==id));
-  if(!item){app.innerHTML="<p>Item not found</p>";return;}
+  if(!item){app.innerHTML="<p class='not-found'>Item not found</p>";return;}
+
+  const title = item.Title || item.title;
+  const description = item.Description || item.description || 'No description available.';
+  const category = item.Category || item.category || 'N/A';
+  const rating = item.Rating || 'N/A';
+  const runtime = item.Runtime || 'N/A';
+  const date = item.Date || 'N/A';
+  const poster = item.Poster || item.poster;
+
   app.innerHTML=`
-  <div class="container">
-    <div class="detail">
-      <img src="${item.Poster||item.poster}" alt="${item.Title||item.title}">
-      <div class="meta">
-        <h1>${item.Title||item.title}</h1>
-        <p><strong>Category:</strong> ${item.Category||item.category}</p>
-        <p>${item.Description||item.description||''}</p>
-        <a class="btn" href="${item.Watch||item.watch}" target="_blank">Watch Now</a>
+  <div class="container detail-container">
+    <div class="detail-card">
+      <img src="${poster}" alt="${title}" class="detail-poster">
+      <div class="detail-meta">
+        <h1 class="detail-title">${title}</h1>
+        <div class="detail-info-row">
+            <span class="info-tag category-tag">${category}</span>
+            <span class="info-tag rating-tag">⭐ ${rating}</span>
+            <span class="info-tag runtime-tag">🕒 ${runtime}</span>
+            <span class="info-tag date-tag">📅 ${date}</span>
+        </div>
+        <p class="detail-description">${description}</p>
+        <a class="btn btn-watch" href="${item.Watch||item.watch}" target="_blank">▶️ Watch Now</a>
       </div>
     </div>
   </div>`;
@@ -105,7 +123,7 @@ async function router(){
   const parts=getRoute();
   const isDetailPage = parts[0]==='item';
   
-  // Toggle the class on the body element to show/hide header and buttons
+  // Always set the class on the body for reliable hiding/showing
   document.body.classList.toggle('detail-page', isDetailPage);
 
   if(parts.length===1&&(parts[0]===''||parts[0]===undefined)){await renderHome();return;}
@@ -118,4 +136,3 @@ qs('#searchInput')?.addEventListener('keyup',(e)=>{if(e.key==='Enter'){const q=e
 
 window.addEventListener('hashchange',router)
 window.addEventListener('load',router)
-              
