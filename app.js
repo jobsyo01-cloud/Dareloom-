@@ -1,11 +1,12 @@
 const SHEET_ID = "1A2I6jODnR99Hwy9ZJXPkGDtAFKfpYwrm3taCWZWoZ7o";
 const API_KEY = "AIzaSyBFnyqCW37BUL3qrpGva0hitYUhxE_x5nw";
-const SHEET_NAME = "2";
+const SHEET_NAME = "2"; // UPDATED SHEET NAME
 const PAGE_SIZE = 12;
 
 function qs(sel){return document.querySelector(sel)}
 
 async function fetchAllRows(){
+  // Using the updated SHEET_NAME
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}?key=${API_KEY}`;
   const res = await fetch(url);
   const json = await res.json();
@@ -52,14 +53,25 @@ async function renderHome(){
 
 async function renderCategory(cat,page=1){
   const app=qs('#app');
-  app.innerHTML=`<div class="container"><div class="header-title"><h2>${cat}</h2></div><div id="list" class="grid"></div><div id="pagination" class="pagination"></div></div>`;
+  // UPDATED: Stylish category title rendering
+  app.innerHTML=`
+  <div class="container">
+    <div class="header-title-style">
+      <h2 class="category-heading">${cat}</h2>
+    </div>
+    <div id="list" class="grid"></div>
+    <div id="pagination" class="pagination"></div>
+  </div>`;
+  
   let data=await fetchAllRows();
-  // Note: This filter looks for an EXACT match (case-insensitive)
-  // Ensure your Google Sheet's Category column matches the nav links (e.g., 'Movie')
+  
+  // CRITICAL: Filter relies on the 'Category' column in Sheet "2" matching 'cat'
   let filtered=data.filter(d=>d.Category?.toLowerCase()===cat.toLowerCase());
+  
   filtered=sortNewest(filtered);
   const {pageItems,pages}=paginate(filtered,page,PAGE_SIZE);
   qs('#list').innerHTML=pageItems.map(movieCardHtml).join('');
+  
   // pagination
   const p=qs('#pagination');
   let html='';
@@ -89,7 +101,6 @@ async function renderItemDetail(id){
 function navigateTo(hash){window.location.hash=hash}
 function getRoute(){return location.hash.replace(/^#\/?/,'').split('/')}
 
-// UPDATED router function to manage the 'detail-page' class on the body
 async function router(){
   const parts=getRoute();
   const isDetailPage = parts[0]==='item';
@@ -107,3 +118,4 @@ qs('#searchInput')?.addEventListener('keyup',(e)=>{if(e.key==='Enter'){const q=e
 
 window.addEventListener('hashchange',router)
 window.addEventListener('load',router)
+              
