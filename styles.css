@@ -17,12 +17,12 @@ body {
   line-height: 1.6; 
 }
 
-/* --- Header & Navigation --- */
+/* --- Header & Navigation (COMPACT) --- */
 .site-header {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 16px 30px;
+  gap: 15px; /* Reduced gap */
+  padding: 10px 30px; /* Reduced vertical padding */
   background: var(--bg-mid);
   position: sticky;
   top: 0;
@@ -31,35 +31,19 @@ body {
   box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
 
-/* Logo - Fixed to display both image and text cleanly */
-.logo-link { 
-  text-decoration: none; 
-  display: flex; 
-  align-items: center;
-}
-
-.logo-img {
-  height: 34px; 
-  width: auto;
-  margin-right: 8px;
-  transition: transform 0.2s;
-}
-
-.logo-text {
-  font-weight: 900; 
-  font-size: 24px; 
-  color: var(--primary-color); 
-  letter-spacing: 1px;
-}
-
+/* Logo */
+.logo-link { text-decoration: none; display: flex; align-items: center; }
+.logo-img { height: 30px; width: auto; margin-right: 6px; transition: transform 0.2s; }
+.logo-text { font-weight: 900; font-size: 22px; color: var(--primary-color); letter-spacing: 1px; }
 .logo-link:hover .logo-img { transform: scale(1.05); }
 
-.main-nav { display: flex; gap: 10px; flex-wrap: wrap; font-size: 15px; }
+/* Main Navigation Links (made more compact) */
+.main-nav { display: flex; gap: 4px; flex-wrap: wrap; font-size: 14px; } 
 .main-nav a {
   color: var(--text-mid);
   text-decoration: none;
-  padding: 8px 14px;
-  border-radius: 6px;
+  padding: 5px 9px; /* Reduced padding */
+  border-radius: 4px;
   transition: 0.3s;
   font-weight: 500;
 }
@@ -68,7 +52,7 @@ body {
 /* Search */
 .search-wrap { margin-left: auto; }
 #searchInput {
-  padding: 8px 16px;
+  padding: 6px 14px; /* Reduced padding */
   border-radius: 20px;
   border: 1px solid var(--bg-light);
   background: var(--bg-dark);
@@ -83,6 +67,7 @@ body {
 .container { padding: 30px; max-width: 1400px; margin: 0 auto; }
 .grid {
   display: grid;
+  /* Adjusting to fit 6 items well on larger screens, but responsive */
   grid-template-columns: repeat(auto-fill,minmax(200px,1fr));
   gap: 25px;
 }
@@ -104,6 +89,45 @@ body {
     margin: 0;
 }
 
+/* --- Dynamic Sub-Category Sections --- */
+.category-section {
+    margin-top: 50px;
+}
+
+.sub-category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: none; /* Override the main category style */
+    border-bottom: 2px solid var(--bg-light); 
+    padding-left: 0;
+    margin-bottom: 20px;
+}
+
+.sub-category-header .category-heading {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-shadow: none;
+    color: var(--text-light);
+    padding-bottom: 10px;
+}
+
+.view-all-btn {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 6px 12px;
+    border: 1px solid var(--primary-color);
+    border-radius: 4px;
+    transition: 0.2s;
+    font-size: 14px;
+}
+.view-all-btn:hover {
+    background: var(--primary-color);
+    color: var(--bg-dark);
+}
+
 /* --- Card Styles (Professional) --- */
 .card {
   background: var(--bg-mid);
@@ -121,7 +145,7 @@ body {
 
 .card img {
   width: 100%;
-  height: 300px; /* Increased height for professional look */
+  height: 300px;
   object-fit: cover;
   display: block;
 }
@@ -159,67 +183,17 @@ body {
   margin: 0;
 }
 
-/* --- Detail Page (Professional) --- */
-.detail-container {
-    padding: 50px 30px;
-}
-
-.detail-card {
-  display: flex;
-  gap: 40px;
-  background: var(--bg-mid);
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-}
-
-.detail-poster {
-  width: 300px;
-  height: 450px;
-  object-fit: cover;
-  border-radius: 10px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-}
-
-.detail-meta {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.detail-title {
-    font-size: 42px;
-    font-weight: 900;
-    color: var(--primary-color);
-    margin-bottom: 10px;
-}
-
-.detail-info-row {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
-}
-
-.info-tag {
-    background: var(--bg-light);
-    padding: 6px 12px;
-    border-radius: 5px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-light);
-}
-
+/* --- Detail Page (Professional) - Styles remain the same --- */
+.detail-container { padding: 50px 30px; }
+.detail-card { display: flex; gap: 40px; background: var(--bg-mid); padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+.detail-poster { width: 300px; height: 450px; object-fit: cover; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+.detail-meta { flex-grow: 1; display: flex; flex-direction: column; gap: 15px; }
+.detail-title { font-size: 42px; font-weight: 900; color: var(--primary-color); margin-bottom: 10px; }
+.detail-info-row { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 10px; }
+.info-tag { background: var(--bg-light); padding: 6px 12px; border-radius: 5px; font-size: 14px; font-weight: 500; color: var(--text-light); }
 .category-tag { border: 1px solid var(--primary-color); }
 .rating-tag { color: gold; }
-
-.detail-description {
-    font-size: 16px;
-    color: var(--text-mid);
-    line-height: 1.8;
-}
-
+.detail-description { font-size: 16px; color: var(--text-mid); line-height: 1.8; }
 .btn-watch {
   align-self: flex-start;
   padding: 12px 30px;
@@ -237,14 +211,8 @@ body {
     transform: translateY(-2px);
 }
 
-/* --- Pagination --- */
-.pagination { 
-    display: flex; 
-    justify-content: center; 
-    gap: 10px; 
-    flex-wrap: wrap; 
-    margin-top: 30px; 
-}
+/* --- Pagination - Styles remain the same --- */
+.pagination { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 30px; }
 .page-btn {
   padding: 8px 14px;
   background: var(--bg-light);
@@ -257,18 +225,10 @@ body {
 .page-btn:hover { background: var(--primary-color); }
 .page-btn.active { background: var(--primary-color); font-weight: 700; }
 
-/* --- Telegram Floating Buttons --- */
-.telegram-buttons {
-  position: fixed;
-  right: 25px;
-  bottom: 25px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  z-index: 100;
-}
+/* --- Telegram Floating Buttons - Styles remain the same --- */
+.telegram-buttons { position: fixed; right: 25px; bottom: 25px; display: flex; flex-direction: column; gap: 15px; z-index: 100; }
 .telegram-btn {
-  background: var(--secondary-color); /* Blue for Telegram look */
+  background: var(--secondary-color);
   color: #fff;
   padding: 14px 20px;
   border-radius: 30px;
@@ -287,26 +247,13 @@ body.detail-page .site-header .search-wrap,
 body.detail-page .telegram-buttons {
   display: none;
 }
-/* Ensure the header shrinks if navigation is gone */
-body.detail-page .site-header {
-    justify-content: center;
-}
-body.detail-page .logo {
-    margin-left: auto;
-    margin-right: auto;
-}
+body.detail-page .site-header { justify-content: center; }
+body.detail-page .logo { margin-left: auto; margin-right: auto; }
 
-/* --- Footer --- */
-.site-footer {
-    padding: 15px;
-    text-align: center;
-    font-size: 14px;
-    color: var(--text-mid);
-    background: var(--bg-mid);
-    margin-top: 40px;
-}
+/* --- Footer - Styles remain the same --- */
+.site-footer { padding: 15px; text-align: center; font-size: 14px; color: var(--text-mid); background: var(--bg-mid); margin-top: 40px; }
 
-/* --- Responsive Design --- */
+/* --- Responsive Design - Styles remain the same --- */
 @media(max-width: 1200px){
     .grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
 }
@@ -324,5 +271,4 @@ body.detail-page .logo {
     .card img {height: 220px;}
     .category-heading {font-size: 24px;}
     .main-nav {justify-content: center; margin-top: 10px;}
-  }
-  
+}
