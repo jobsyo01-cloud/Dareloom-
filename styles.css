@@ -16,13 +16,42 @@ body { font-family: 'Poppins', system-ui, sans-serif; background: #0f0f12; color
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
-/* Logo update */
-.logo a { text-decoration: none; }
+/* UPDATED Logo styling */
+.logo a { text-decoration: none; position: relative; display: flex; align-items: center; }
+
+.logo-text {
+    font-weight: 800; 
+    font-size: 24px; 
+    color: #ff4b91; 
+    letter-spacing: 1px;
+    position: absolute; 
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0; /* Initially hide the text as the image is the primary logo */
+    transition: opacity 0.3s;
+}
+
 .logo-img {
-    height: 30px; /* Adjust height as needed */
+    height: 30px; 
     width: auto;
     display: block;
+    margin-right: 12px; 
+    position: relative;
+    z-index: 2; 
 }
+/* If the image fails to load, the logo text will appear */
+.logo-img:not([src]):not([srcset]), 
+.logo-img[src=""] {
+    display: none;
+}
+.logo-img:not([src]):not([srcset]) + .logo-text, 
+.logo-img[src=""] + .logo-text {
+    opacity: 1;
+    position: static;
+    transform: none;
+}
+/* END Logo update */
 
 .main-nav { display: flex; gap: 12px; flex-wrap: wrap; }
 .main-nav a {
@@ -55,6 +84,25 @@ body { font-family: 'Poppins', system-ui, sans-serif; background: #0f0f12; color
   grid-template-columns: repeat(auto-fill,minmax(180px,1fr));
   gap: 16px;
 }
+
+/* Stylish Category Design */
+.header-title-style {
+    margin-bottom: 20px;
+    padding: 10px 0;
+    border-bottom: 2px solid #ff4b91; 
+    /* Optional: Add a subtle background or padding to this element if needed */
+}
+
+.category-heading {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    /* Stylish glowing effect */
+    text-shadow: 0 0 10px rgba(255, 75, 145, 0.5), 0 0 20px rgba(255, 75, 145, 0.3);
+}
+/* END Stylish Category Design */
 
 /* Card styles */
 .card {
@@ -176,15 +224,9 @@ body { font-family: 'Poppins', system-ui, sans-serif; background: #0f0f12; color
 }
 .telegram-btn:hover { background: #0d8ce0; transform: scale(1.08); }
 
-/* ---- NEW CODE TO HIDE ELEMENTS ON DETAIL PAGE ---- */
-
-/* Hide the main navigation and search bar when body has 'detail-page' class */
+/* Hide elements on detail page */
 body.detail-page .main-nav,
-body.detail-page .search-wrap {
-  display: none;
-}
-
-/* Hide the floating telegram buttons when body has 'detail-page' class */
+body.detail-page .search-wrap,
 body.detail-page .telegram-buttons {
   display: none;
 }
@@ -194,4 +236,4 @@ body.detail-page .telegram-buttons {
 @media(max-width: 700px){
   .detail{flex-direction:column}
   .detail img{width:100%;height:360px}
-}
+  }
