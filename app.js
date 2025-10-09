@@ -1,4 +1,4 @@
-const SHEET_ID = "1A2I6jODnR99Hwy9ZJXPkGDtAFKfpYwrm3taCWZWoZ7o";
+Const SHEET_ID = "1A2I6jODnR99Hwy9ZJXPkGDtAFKfpYwrm3taCWZWoZ7o";
 const API_KEY = "AIzaSyBFnyqCW37BUL3qrpGva0hitYUhxE_x5nw";
 const SHEET_NAME = "2";
 const PAGE_SIZE = 6; // UPDATED: 6 items per page
@@ -41,9 +41,11 @@ function renderPagination(totalItems, currentPage, cat) {
     const pages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
     if (pages <= 1) return '';
     let html = '';
+    // I am changing the link here for Home to just be /page/ for clarity, it should work fine
+    const catSegment = cat === 'all' ? '' : `/category/${cat}`; 
     for(let i = 1; i <= pages; i++) {
-        const hash = cat === 'all' ? `#/page/${i}` : `#/category/${cat}/page/${i}`;
-        html += `<a href="javascript:void(0)" class="page-btn ${i === currentPage ? 'active' : ''}" onclick="navigateTo('${hash}')">${i}</a>`;
+        const hash = `${catSegment}/page/${i}`;
+        html += `<a href="javascript:void(0)" class="page-btn ${i === currentPage ? 'active' : ''}" onclick="navigateTo('#${hash}')">${i}</a>`;
     }
     return html;
 }
@@ -108,6 +110,54 @@ async function renderCategory(cat,page=1){
   qs('#pagination').innerHTML = renderPagination(total, page, cat);
 }
 
+
+// Function to create HTML for watch links
+function createWatchLinksHtml(item) {
+    // Looks for a column named 'WatchLink' or 'Watch' in the Google Sheet.
+    // It is expected to contain multiple links separated by a pipe (|), e.g.,
+    // "Streamtape|https://stape.com/link|Telegram|https://t.me/link|Other|https://other.com/link"
+    const watchData = item.WatchLink || item.Watch || '';
+    if (!watchData) return '';
+
+    const parts = watchData.split('|').map(s => s.trim()).filter(s => s);
+    if (parts.length < 2) return ''; // Needs at least a label and a URL
+
+    let html = '<div class="watch-links-section"><h3>Watch Links:</h3><div class="watch-links">';
+
+    for (let i = 0; i < parts.length; i += 2) {
+        const label = parts[i];
+        const url = parts[i+1];
+        if (label && url) {
+            html += `<a class="btn btn-watch-dynamic" href="${url}" target="_blank">${label}</a>`;
+        }
+    }
+
+    html += '</div></div>';
+    return html;
+}
+
+// Function to create HTML for screenshots
+function createScreenshotsHtml(item) {
+    // Looks for a column named 'Screenshots' in the Google Sheet.
+    // It is expected to contain multiple image URLs separated by a pipe (|), e.g.,
+    // "http://img1.com/ss1.jpg|http://img2.com/ss2.jpg|http://img3.com/ss3.jpg"
+    const ssData = item.Screenshots || '';
+    if (!ssData) return '';
+
+    const screenshots = ssData.split('|').map(s => s.trim()).filter(s => s);
+    if (screenshots.length === 0) return '';
+
+    let html = '<div class="screenshot-section"><h3>Screenshots:</h3><div class="screenshots-grid">';
+    
+    screenshots.forEach(url => {
+        html += `<img src="${url}" alt="Screenshot" class="screenshot-img">`;
+    });
+
+    html += '</div></div>';
+    return html;
+}
+
+// UPDATED renderItemDetail: Includes Screenshots and dynamic Watch Links
 async function renderItemDetail(id){
   const app=qs('#app');
   let data=await fetchAllRows();
@@ -122,8 +172,12 @@ async function renderItemDetail(id){
   const runtime = item.Runtime || 'N/A';
   const date = item.Date || 'N/A';
   const poster = item.Poster || item.poster;
-  // FIX: Ensure watch link is correctly extracted and available
-  const watchLink = item.Watch || item.watch || '#';
+  
+  // NEW: Generate Screenshots HTML
+  const screenshotsHtml = createScreenshotsHtml(item);
+  
+  // NEW: Generate Dynamic Watch Links HTML
+  const watchLinksHtml = createWatchLinksHtml(item);
 
 
   app.innerHTML=`
@@ -139,7 +193,11 @@ async function renderItemDetail(id){
             <span class="info-tag date-tag">📅 ${date}</span>
         </div>
         <p class="detail-description">${description}</p>
-        <a class="btn btn-watch" href="${watchLink}" target="_blank">▶️ Watch Now</a>
+        
+        ${watchLinksHtml}
+
+        ${screenshotsHtml}
+
       </div>
     </div>
   </div>`;
@@ -178,7 +236,9 @@ async function router(){
   await renderHome(1);
 }
 
+// Keeping the search logic simple for now, as full search implementation wasn't requested
 qs('#searchInput')?.addEventListener('keyup',(e)=>{if(e.key==='Enter'){const q=e.target.value.trim();window.location.hash=`#/category/all/page/1/q/${encodeURIComponent(q)}`}})
 
 window.addEventListener('hashchange',router)
 window.addEventListener('load',router)
+  
