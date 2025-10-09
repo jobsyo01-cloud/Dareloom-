@@ -183,33 +183,137 @@ body {
   margin: 0;
 }
 
-/* --- Detail Page (Professional) - Styles remain the same --- */
+/* --- Detail Page (Professional) --- */
 .detail-container { padding: 50px 30px; }
-.detail-card { display: flex; gap: 40px; background: var(--bg-mid); padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-.detail-poster { width: 300px; height: 450px; object-fit: cover; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
-.detail-meta { flex-grow: 1; display: flex; flex-direction: column; gap: 15px; }
-.detail-title { font-size: 42px; font-weight: 900; color: var(--primary-color); margin-bottom: 10px; }
-.detail-info-row { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 10px; }
-.info-tag { background: var(--bg-light); padding: 6px 12px; border-radius: 5px; font-size: 14px; font-weight: 500; color: var(--text-light); }
+.detail-card { 
+  display: flex; 
+  gap: 40px; 
+  background: var(--bg-mid); 
+  padding: 30px; 
+  border-radius: 15px; 
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6); 
+}
+.detail-poster { 
+  width: 300px; 
+  height: 450px; 
+  object-fit: cover; 
+  border-radius: 10px; 
+  box-shadow: 0 5px 20px rgba(0,0,0,0.5); 
+}
+.detail-meta { 
+  flex-grow: 1; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 15px; 
+}
+.detail-title { 
+  font-size: 42px; 
+  font-weight: 900; 
+  color: var(--primary-color); 
+  margin-bottom: 10px; 
+}
+.detail-info-row { 
+  display: flex; 
+  gap: 15px; 
+  flex-wrap: wrap; 
+  margin-bottom: 10px; 
+}
+.info-tag { 
+  background: var(--bg-light); 
+  padding: 6px 12px; 
+  border-radius: 5px; 
+  font-size: 14px; 
+  font-weight: 500; 
+  color: var(--text-light); 
+}
 .category-tag { border: 1px solid var(--primary-color); }
 .rating-tag { color: gold; }
-.detail-description { font-size: 16px; color: var(--text-mid); line-height: 1.8; }
-.btn-watch {
-  align-self: flex-start;
-  padding: 12px 30px;
-  border-radius: 30px;
-  font-size: 18px;
-  margin-top: 15px;
-  background: linear-gradient(90deg, var(--primary-color) 0%, #ff85c1 100%);
-  color: #fff;
+.detail-description { 
+  font-size: 16px; 
+  color: var(--text-mid); 
+  line-height: 1.8; 
+}
+
+/* --- NEW: Dynamic Watch Links Section --- */
+.watch-links-section h3 {
+    font-size: 20px;
+    color: var(--text-light);
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 5px;
+    align-self: flex-start;
+}
+
+.watch-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.btn-watch-dynamic {
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 16px;
   text-decoration: none;
   font-weight: 700;
-  box-shadow: 0 4px 15px rgba(255,75,145,0.4);
+  transition: 0.3s;
+  color: var(--bg-dark); /* Text color for buttons */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  /* Default Gradient, will be customized for specific links later if needed */
+  background: linear-gradient(90deg, var(--primary-color) 0%, #ff85c1 100%);
 }
-.btn-watch:hover { 
-    background: linear-gradient(90deg, #ff85c1 0%, var(--primary-color) 100%); 
+.btn-watch-dynamic:hover {
     transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(255,75,145,0.6);
 }
+
+/* You can define specific styles for different link types here, 
+   e.g., based on the link text or a custom data attribute if you add one */
+.btn-watch-dynamic[href*="telegram"] {
+    background: var(--secondary-color); /* Blue for Telegram */
+    color: #fff;
+}
+.btn-watch-dynamic[href*="telegram"]:hover {
+    background: #007bff;
+}
+
+/* --- NEW: Screenshots Section --- */
+.screenshot-section {
+    margin-top: 20px;
+}
+
+.screenshot-section h3 {
+    font-size: 20px;
+    color: var(--text-light);
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 5px;
+    align-self: flex-start;
+}
+
+.screenshots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.screenshot-img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    transition: transform 0.3s;
+}
+.screenshot-img:hover {
+    transform: scale(1.02);
+}
+
+/* REMOVING the old single .btn-watch since the new dynamic links replace it */
+/* .btn-watch { ... } */ 
+/* --- End of Detail Page Updates --- */
+
 
 /* --- Pagination - Styles remain the same --- */
 .pagination { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 30px; }
@@ -265,10 +369,21 @@ body.detail-page .logo { margin-left: auto; margin-right: auto; }
     .detail-poster {width: 100%; height: auto;}
     .detail-title {font-size: 32px;}
     .detail-container {padding: 20px;}
+    
+    /* Responsive adjustment for screenshots */
+    .screenshots-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
 }
 @media(max-width: 600px){
     .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
     .card img {height: 220px;}
     .category-heading {font-size: 24px;}
     .main-nav {justify-content: center; margin-top: 10px;}
-}
+
+    /* Smaller screenshot size on small screens */
+    .screenshots-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+  }
+  
