@@ -1,11 +1,9 @@
 Const SHEET_ID = "1A2I6jODnR99Hwy9ZJXPkGDtAFKfpYwrm3taCWZWoZ7o";
 const API_KEY = "AIzaSyBFnyqCW37BUL3qrpGva0hitYUhxE_x5nw";
 const SHEET_NAME = "2";
-const PAGE_SIZE = 6; // UPDATED: 6 items per page
+const PAGE_SIZE = 6; // 6 items per page
 
 function qs(sel){return document.querySelector(sel)}
-
-// We don't need HEADER_CATEGORIES list now since we removed the dynamic sub-category rendering.
 
 async function fetchAllRows(){
   // Fetching data from the Sheet Name "2"
@@ -17,35 +15,47 @@ async function fetchAllRows(){
   const headers = rows[0].map(h=>h.trim());
   const data = rows.slice(1).map(r=>{
     const obj={};
+    // If a row is shorter than headers, fill missing values with empty string
     headers.forEach((h,i)=>obj[h]=r[i]??"");
     return obj;
   });
   data.forEach((d,i)=>{
     // Using trim() on the ID to ensure clean URL segments for routing
     d._id=(d.id || d.Title || (i+1).toString()).trim(); 
-    // Use Date to sort (important for "Latest Movie")
-    d._ts=new Date(d.date||"1970-01-01").getTime(); 
+    // REMOVING: d._ts logic since Date column is removed.
   });
   return data;
 }
 
-function sortNewest(arr){return arr.sort((a,b)=>(b._ts||0)-(a._ts||0))}
+// REMOVING: function sortNewest(arr){...} since Date is removed.
 
 function paginate(items,page=1,pageSize=PAGE_SIZE){
   const total=items.length,pages=Math.max(1,Math.ceil(total/pageSize)),start=(page-1)*pageSize;
   return {pageItems:items.slice(start,start+pageSize),total,pages};
 }
 
-// NEW FUNCTION: Helper to generate pagination HTML
-function renderPagination(totalItems, currentPage, cat) {
+// Helper to generate pagination HTML
+function renderPagination(totalItems, currentPage, cat, searchQuery = '') {
     const pages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
     if (pages <= 1) return '';
     let html = '';
-    // I am changing the link here for Home to just be /page/ for clarity, it should work fine
-    const catSegment = cat === 'all' ? '' : `/category/${cat}`; 
+    
+    // Base hash segment changes based on context (category or search)
+    let baseHash = '';
+    if (searchQuery) {
+        // Pagination for search results
+        baseHash = `#/search/${encodeURIComponent(searchQuery)}/page/`;
+    } else if (cat !== 'all') {
+        // Pagination for a specific category
+        baseHash = `#/category/${cat}/page/`;
+    } else {
+        // Pagination for the Home page
+        baseHash = `#/page/`;
+    }
+
     for(let i = 1; i <= pages; i++) {
-        const hash = `${catSegment}/page/${i}`;
-        html += `<a href="javascript:void(0)" class="page-btn ${i === currentPage ? 'active' : ''}" onclick="navigateTo('#${hash}')">${i}</a>`;
+        const hash = `${baseHash}${i}`;
+        html += `<a href="javascript:void(0)" class="page-btn ${i === currentPage ? 'active' : ''}" onclick="navigateTo('${hash}')">${i}</a>`;
     }
     return html;
 }
@@ -65,19 +75,55 @@ function movieCardHtml(item){
   </div>`;
 }
 
-// UPDATED renderHome: Shows only Latest Uploads (6 per page) with pagination
+// NEW: Function to get unique categories for the home page listing
+async function getUniqueCategories(data) {
+    const categories = new Set();
+    data.forEach(item => {
+        // Use Category column first, then Genre (or any other defined column)
+        const catValue = item.Category?.trim() || item.Genre?.trim();
+        if (catValue) {
+            // Split by comma if multiple categories are listed
+            catValue.split(',').forEach(c => {
+                const cleanCat = c.trim();
+                if (cleanCat) categories.add(cleanCat);
+            });
+        }
+    });
+    // Convert set back to array and return
+    return Array.from(categories);
+}
+
+// NEW: Function to render the category list on the home page
+function renderCategoryList(categories) {
+    let html = '<div class="category-list-wrap">';
+    categories.forEach(cat => {
+        const hash = `#/category/${encodeURIComponent(cat)}`;
+        html += `<a href="javascript:void(0)" class="category-list-btn" onclick="navigateTo('${hash}')">${cat}</a>`;
+    });
+    html += '</div>';
+    return html;
+}
+
+
+// UPDATED renderHome: Shows all items (unsorted) and category list
 async function renderHome(page=1){
   const app=qs('#app');
   let data=await fetchAllRows();
-  data=sortNewest(data); // Home page always shows newest first
   
+  // 1. Get Categories for listing
+  const categories = await getUniqueCategories(data);
+  const categoryListHtml = renderCategoryList(categories);
+
   const {pageItems, total}=paginate(data, page, PAGE_SIZE);
   
-  // Home Page HTML Structure (Only Latest Uploads)
+  // Home Page HTML Structure
   let homeHtml = `<div class="container">
     <div class="header-title-style">
-      <h2 class="category-heading">Latest Uploads</h2>
+      <h2 class="category-heading">All Titles</h2>
     </div>
+    
+    ${categoryListHtml} 
+
     <div id="list" class="grid">${pageItems.map(movieCardHtml).join('')}</div>
     <div id="pagination" class="pagination">${renderPagination(total, page, 'all')}</div>
   </div>`;
@@ -85,24 +131,62 @@ async function renderHome(page=1){
   app.innerHTML = homeHtml;
 }
 
+// NEW: renderSearch function
+async function renderSearch(query, page = 1) {
+    const app = qs('#app');
+    
+    app.innerHTML=`
+    <div class="container">
+      <div class="header-title-style">
+        <h2 class="category-heading">Search Results for: "${query}"</h2>
+      </div>
+      <div id="list" class="grid"></div>
+      <div id="pagination" class="pagination"></div>
+    </div>`;
+
+    let data = await fetchAllRows();
+    const lowerQuery = query.toLowerCase();
+
+    // Filter by Title
+    let filtered = data.filter(d => 
+        d.Title?.toLowerCase().includes(lowerQuery)
+    );
+    
+    // Sort by newest item (if Date existed, it would go here)
+    
+    const {pageItems, total} = paginate(filtered, page, PAGE_SIZE);
+    
+    qs('#list').innerHTML = pageItems.length > 0 
+        ? pageItems.map(movieCardHtml).join('') 
+        : `<p class="not-found" style="text-align:center; padding: 40px;">No results found for "${query}".</p>`;
+
+    // pagination for search results
+    qs('#pagination').innerHTML = renderPagination(total, page, null, query);
+}
+
+
 async function renderCategory(cat,page=1){
   const app=qs('#app');
   // Use professional title structure
   app.innerHTML=`
   <div class="container">
     <div class="header-title-style">
-      <h2 class="category-heading">${cat.toUpperCase()}</h2>
+      <h2 class="category-heading">${decodeURIComponent(cat).toUpperCase()}</h2>
     </div>
     <div id="list" class="grid"></div>
     <div id="pagination" class="pagination"></div>
   </div>`;
   
   let data=await fetchAllRows();
+  const lowerCat = cat.toLowerCase();
   
-  // FIX: Robust category filter - trims spaces from both sides
-  let filtered=data.filter(d=>d.Category?.trim().toLowerCase()===cat.toLowerCase());
+  // Filter by Category and Genre (to catch items listed in both columns)
+  let filtered=data.filter(d => 
+      d.Category?.trim().toLowerCase().includes(lowerCat) || 
+      d.Genre?.trim().toLowerCase().includes(lowerCat) 
+  );
   
-  filtered=sortNewest(filtered);
+  // No sorting applied since Date column is removed
   const {pageItems,total}=paginate(filtered,page,PAGE_SIZE);
   qs('#list').innerHTML=pageItems.map(movieCardHtml).join('');
   
@@ -111,16 +195,14 @@ async function renderCategory(cat,page=1){
 }
 
 
-// Function to create HTML for watch links
+// Function to create HTML for watch links (UNCHANGED)
 function createWatchLinksHtml(item) {
-    // Looks for a column named 'WatchLink' or 'Watch' in the Google Sheet.
-    // It is expected to contain multiple links separated by a pipe (|), e.g.,
-    // "Streamtape|https://stape.com/link|Telegram|https://t.me/link|Other|https://other.com/link"
+    // ... (function body remains the same)
     const watchData = item.WatchLink || item.Watch || '';
     if (!watchData) return '';
 
     const parts = watchData.split('|').map(s => s.trim()).filter(s => s);
-    if (parts.length < 2) return ''; // Needs at least a label and a URL
+    if (parts.length < 2) return ''; 
 
     let html = '<div class="watch-links-section"><h3>Watch Links:</h3><div class="watch-links">';
 
@@ -136,12 +218,10 @@ function createWatchLinksHtml(item) {
     return html;
 }
 
-// Function to create HTML for screenshots
+// Function to create HTML for screenshots (UNCHANGED)
 function createScreenshotsHtml(item) {
-    // Looks for a column named 'Screenshots' in the Google Sheet.
-    // It is expected to contain multiple image URLs separated by a pipe (|), e.g.,
-    // "http://img1.com/ss1.jpg|http://img2.com/ss2.jpg|http://img3.com/ss3.jpg"
-    const ssData = item.Screenshots || '';
+    // ... (function body remains the same)
+    const ssData = item.Screenshots || item.Screenshot || '';
     if (!ssData) return '';
 
     const screenshots = ssData.split('|').map(s => s.trim()).filter(s => s);
@@ -157,7 +237,7 @@ function createScreenshotsHtml(item) {
     return html;
 }
 
-// UPDATED renderItemDetail: Includes Screenshots and dynamic Watch Links
+// UPDATED renderItemDetail (UNCHANGED)
 async function renderItemDetail(id){
   const app=qs('#app');
   let data=await fetchAllRows();
@@ -170,7 +250,7 @@ async function renderItemDetail(id){
   const category = item.Category || item.category || 'N/A';
   const rating = item.Rating || 'N/A';
   const runtime = item.Runtime || 'N/A';
-  const date = item.Date || 'N/A';
+  const date = item.Date || 'N/A'; // Date will show N/A if column is removed
   const poster = item.Poster || item.poster;
   
   // NEW: Generate Screenshots HTML
@@ -206,28 +286,38 @@ async function renderItemDetail(id){
 function navigateTo(hash){window.location.hash=hash}
 function getRoute(){return location.hash.replace(/^#\/?/,'').split('/')}
 
-// UPDATED router function to handle home page pagination
+// UPDATED router function to handle search and category routing
 async function router(){
   const parts=getRoute();
   const isDetailPage = parts[0]==='item';
-  const isHomePage = parts[0]==='' || parts[0]===undefined || parts[0]==='page';
   
   // Always set the class on the body for reliable hiding/showing
   document.body.classList.toggle('detail-page', isDetailPage);
 
-  if(isHomePage){
+  if(parts[0]==='' || parts[0]==='page'){
     let page=1;
     if(parts[0]==='page') page=Number(parts[1]||1);
     await renderHome(page);
     return;
   }
+  
   if(parts[0]==='category'){
-    const cat=decodeURIComponent(parts[1]||'all');
+    const cat=parts[1]||'all';
     let page=1;
     if(parts[2]==='page')page=Number(parts[3]||1);
     await renderCategory(cat,page);
     return;
   }
+  
+  // NEW: Handle search routing
+  if(parts[0]==='search'){
+    const query=parts[1]||'';
+    let page=1;
+    if(parts[2]==='page')page=Number(parts[3]||1);
+    await renderSearch(decodeURIComponent(query), page);
+    return;
+  }
+  
   if(isDetailPage){
     const id=parts[1]||'';
     await renderItemDetail(id);
@@ -236,9 +326,17 @@ async function router(){
   await renderHome(1);
 }
 
-// Keeping the search logic simple for now, as full search implementation wasn't requested
-qs('#searchInput')?.addEventListener('keyup',(e)=>{if(e.key==='Enter'){const q=e.target.value.trim();window.location.hash=`#/category/all/page/1/q/${encodeURIComponent(q)}`}})
+// NEW: Search input event listener now routes to the search function
+qs('#searchInput')?.addEventListener('keyup',(e)=>{
+    if(e.key==='Enter'){
+        const q=e.target.value.trim();
+        if(q) {
+            // New route for search
+            window.location.hash=`#/search/${encodeURIComponent(q)}/page/1`;
+        }
+    }
+})
 
 window.addEventListener('hashchange',router)
 window.addEventListener('load',router)
-  
+                  
